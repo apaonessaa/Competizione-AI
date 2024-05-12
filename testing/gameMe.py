@@ -6,7 +6,7 @@ from board import Board,draw_board,initGraphicalBoard
 import concurrent.futures
 
 # #######################
-import players.PaonessaPerriChiappetta as playerXmodule
+# No players
 # #######################
 
 
@@ -55,14 +55,14 @@ class KingCourt(Game):
             c1 = (p[0]+1, p[1]-1)
             c2= (p[0]+1, p[1]+1)
             if c1 not in coda:
-                if c1[0] < height-7:
+                if c1[0] < height-6:
                     positions.update({c1:'x'})
                 coda.insert(0,c1)
                 self.squares.update({c1})
                 coda.insert(0,c1)
                 self.squares.update({c1})
             if c2 not in coda:
-                if c2[0] < height-7:
+                if c2[0] < height-6:
                     positions.update({c2:'x'})
                 coda.insert(0,c2)
                 self.squares.update({c2})
@@ -76,16 +76,20 @@ class KingCourt(Game):
             c1 = (p[0]-1, p[1]-1)
             c2 = (p[0]-1, p[1]+1)
             if c1 not in coda:
-                if c1[0] >= height+7:
+                if c1[0] >= height+4:
                     positions.update({c1:'o'})
                 coda.insert(0,c1)
                 self.squares.update({c1})
             if c2 not in coda:
-                if c2[0] >= height+7:
+                if c2[0] >= height+4:
                     positions.update({c2:'o'})
                 coda.insert(0,c2)
                 self.squares.update({c2})
-            
+        
+        positions = {
+            (2,7):'K', (12,7): 'Q'
+        }
+      
         self.initial = Board(positions,height=self.height, width=self.width, to_move='X', utility=0)
 
 
@@ -192,14 +196,17 @@ def play_game(game, verbose=False, passoPasso = False, timeout = 3):
             trouble = False
             
             if player == 'X':
-                playerResult = executor.submit(playerXmodule.playerStrategy, game, state)
+                #playerResult = executor.submit(playerXmodule.playerStrategy, game, state)
+                move = input("Enter move: ").split()
+                move = tuple([player, tuple(map(int, move[0].split(','))), tuple(map(int, move[1].split(','))), move[2]])
             else:
                 #playerResult = executor.submit(playerOmodule.playerStrategy, game, state)
                 move = input("Enter move: ").split()
                 move = tuple([player, tuple(map(int, move[0].split(','))), tuple(map(int, move[1].split(','))), move[2]])
             try:
                 if player == 'X':
-                    move = playerResult.result(timeout=timeout)
+                    #move = playerResult.result(timeout=timeout)
+                    pass
             except concurrent.futures.TimeoutError:
                 print("La funzione è stata interrotta a causa del timeout")
                 move = None

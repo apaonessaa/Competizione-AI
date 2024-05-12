@@ -7,7 +7,7 @@ import concurrent.futures
 
 # #######################
 import players.PaonessaPerriChiappetta as playerXmodule
-import players.playerExampleRandom as playerOmodule
+import players.PaonessaPerriChiappetta as playerOmodule
 # #######################
 
 # King and Courtesan Game
@@ -85,9 +85,8 @@ class KingCourt(Game):
                     positions.update({c2:'o'})
                 coda.insert(0,c2)
                 self.squares.update({c2})
-            
+        #positions={(8,11):'K', (7,6):'Q', (5,6):'o', (9,6):'o', (6,7):'o', (8,3):' ', (7,4):'o'}
         self.initial = Board(positions,height=self.height, width=self.width, to_move='X', utility=0)
-
 
     def actions(self, board):
         """Legal moves """
@@ -170,6 +169,7 @@ class KingCourt(Game):
 
 
 
+import time 
 def play_game(game, verbose=False, passoPasso = False, timeout = 3):
     """Play a turn-taking game. `strategies` is a {player_name: function} dict,
     where function(state, game) is used to get the player's move."""
@@ -182,7 +182,7 @@ def play_game(game, verbose=False, passoPasso = False, timeout = 3):
 
     initGraphicalBoard(game,"X","O")
     draw_board(game,state)
-
+    
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
     
         while not game.is_terminal(state):

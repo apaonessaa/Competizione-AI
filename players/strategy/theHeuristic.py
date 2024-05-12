@@ -10,19 +10,18 @@ def h(board, player):
             # forward per X ma backward per O
             # y             X backward
             # x             O forward
-            return -1 if player == 'X' else +1
+            return -1 if board[x]=='x' or board[x]=='K' else +1
         # backward per X ma forward per O
         # x             X forward
         # y             O backward
-        return +1 if player == 'X' else -1
+        return +1 if board[x]=='x' or board[x]=='K' else -1
     
-    def possibileMove(x,y):
+    def possibleMove(x,y):
         def minDistance(x,y,z):
-            if distance(y,z)<distance(x,z):
-                return y
-            return x
+            return y if distance(y,z)<distance(x,z) else x
         
         d=direction(x,y)
+        # print(x,y,d)
         if x == myKing or x == opponentKing:
             return 1
         else:
@@ -51,36 +50,59 @@ def h(board, player):
                         return 1
         return 0
             
-    def boardEval(x):
+    def eval(x):
         if board[x] == board.off: return 0
         squares = possiblesquares(x)
         density = 0
+        zeros=0
         for square in squares:
-            if board[square] == board.off and (x==myKing or x==opponentKing):
-                density+=0
-            elif board[square] == board.empty and x==opponentKing:
-                density+=symbols[board[opponentKing]] if direction(x,square)>0 else symbols[board[myKing]]
-            elif board[square] == board.empty and x==myKing:
-                density+=symbols[board[square]] if direction(x,square)>0 else symbols[board[myKing]]
-            elif x==myKing or x==opponentKing:
-                density+= symbols[board[square]] if symbols[board[x]] == symbols[board[square]] else 9*symbols[board[square]]
-            else:
-                density+=symbols[board[square]] if direction(x,square)>0 else 0
-        if square == opponentKing:   
-            return density/distance(square,opponentGoal) if density!=0 else +8/distance(square,opponentGoal) 
-        if square == myKing:
-            if density==0:
-               for pos in possiblesquares(square):
-                   if symbols[board[pos]] != 0: return -16/distance(square,myGoal) 
-               return +1/distance(square,myGoal) 
-            return density/distance(square,myGoal)
-        distances=distance(square,myKing)*distance(square,opponentKing)
-        if possibileMove(square,myKing)+possibileMove(square,opponentKing)==0:
-            return 0 if symbols[board[x]]==symbols[board[myKing]] else +1
-        return density/distances if density!=0 else symbols[board[square]]/distances
+            zeros+=1 if symbols[board[square]]==0 else 0
 
+            if board[square] == board.empty:
+                if x==opponentKing:
+                    density+=symbols[board[opponentKing]] if possibleMove(opponentKing,square)>0 else symbols[board[myKing]]
+                elif x==myKing:
+                    density+=symbols[board[square]] if possibleMove(myKing,square)>0 else symbols[board[myKing]]
+            else:
+                if x==myKing or x==opponentKing:
+                    if symbols[board[x]] == symbols[board[square]]:
+                        # behind myKing
+                        density+= 0 if direction(square,x)>0 else symbols[board[square]]
+                    else:
+                        density+= 8*symbols[board[square]]
+                else:
+                    density+=symbols[board[square]]
+        
+        if x == opponentKing:  
+            # distanceOppKingtoGoal == distance(x,opponentGoal)
+            if density==0:
+                return -1/distanceOppKingtoGoal if zeros==8 else +5/distanceOppKingtoGoal
+            return density/distanceOppKingtoGoal
+        
+        if x == myKing:
+            # distanceMyKingtoGoal == distance(x,myGoal)
+            if density==0:
+                return +1/distanceMyKingtoGoal if zeros==8 else -8/distanceMyKingtoGoal
+            return density/distanceMyKingtoGoal
+        
+        if density==0 and zeros==8:
+            if symbols[board[x]] == symbols[board[myKing]]:
+                return symbols[board[x]] if direction(x,opponentKing)>0 else 0
+            else:
+                return symbols[board[x]] if direction(x,myKing)>0 else symbols[board[myKing]]
+        
+        distances=distance(x,myKing)*distance(x,opponentKing)
+        return density/distances if density!=0 else symbols[board[x]]/distances
+
+    def compareDistance():
+        if distanceMyKingtoGoal < distanceOppKingtoGoal:
+            return +1/distanceMyKingtoGoal
+        if distanceMyKingtoGoal > distanceOppKingtoGoal: 
+            return -1/distanceOppKingtoGoal
+        return 0
+    
     if player=='X':
-        myGoal=(14,7)
+        myGoal=(14,7) 
         opponentGoal=(0,7)
         symbols={'o':-1,'Q':-1,'x':1,'K':1,'#':0,' ':0}
     else:
@@ -88,9 +110,13 @@ def h(board, player):
         opponentGoal=(14,7)
         symbols={'o':1,'Q':1,'x':-1,'K':-1,'#':0,' ':0}
 
-    boarddensity=0
+    def distance(x,y):
+        return euclideanDistance(x,y) if x!=y else 0.00001
+    
     myKing=(-1,-1)
     opponentKing=(-1,-1)
+
+    globalDensity=0
     for (r,c) in board:
         if board[(r,c)] == 'K':
             if player == 'X':
@@ -102,51 +128,58 @@ def h(board, player):
                 opponentKing=(r,c)
             else:
                 myKing=(r,c)
-        boarddensity+=symbols[board[(r,c)]] if (r,c)!=myKing or (r,c)!=opponentKing else 16*symbols[board[(r,c)]]
+        globalDensity+=symbols[board[(r,c)]] if (r,c)!=myKing or (r,c)!=opponentKing else 16*symbols[board[(r,c)]]
 
-    defensive=boardEval(myKing)
+    distanceMyKingtoGoal=distance(myKing,myGoal)
+    distanceOppKingtoGoal=distance(opponentKing,opponentGoal)
+
+    defensive=0
     (r,c)=myKing
-    ddefensive=0
     for i in range(1,3):
         if player=='O':
-            ddefensive+=boardEval((r-i,c-i)) if board[(r-i,c-i)] != symbols[board[myKing]] else 0
-            ddefensive+=boardEval((r-i,c+i)) if board[(r-i,c+i)] != symbols[board[myKing]] else 0
-            ddefensive+=boardEval((r-2*i,c)) if board[(r-2*i,c)] != symbols[board[myKing]] else 0
+            defensive+=eval((r-i,c-i)) if board[(r-i,c-i)] != symbols[board[myKing]] else 0
+            defensive+=eval((r-i,c+i)) if board[(r-i,c+i)] != symbols[board[myKing]] else 0
+            defensive+=eval((r-2*i,c)) if board[(r-2*i,c)] != symbols[board[myKing]] else 0
         else:
-            ddefensive+=boardEval((r+i,c-i)) if board[(r+i,c-i)] != symbols[board[myKing]] else 0
-            ddefensive+=boardEval((r+i,c+i)) if board[(r+i,c+i)] != symbols[board[myKing]] else 0
-            ddefensive+=boardEval((r+2*i,c)) if board[(r+2*i,c)] != symbols[board[myKing]] else 0
-        ddefensive+=boardEval((r,c-2*i)) if board[(r,c-2*i)] != symbols[board[myKing]] else 0
-        ddefensive+=boardEval((r,c+2*i)) if board[(r,c+2*i)] != symbols[board[myKing]] else 0
+            defensive+=eval((r+i,c-i)) if board[(r+i,c-i)] != symbols[board[myKing]] else 0
+            defensive+=eval((r+i,c+i)) if board[(r+i,c+i)] != symbols[board[myKing]] else 0
+            defensive+=eval((r+2*i,c)) if board[(r+2*i,c)] != symbols[board[myKing]] else 0
+        defensive+=eval((r,c-2*i)) if board[(r,c-2*i)] != symbols[board[myKing]] else 0
+        defensive+=eval((r,c+2*i)) if board[(r,c+2*i)] != symbols[board[myKing]] else 0
 
-    offensive=boardEval(opponentKing)
+    offensive=0
     (r,c)=opponentKing
-    ooffensive=0
     for i in range(1,3):
         if player=='X':
-            ooffensive+=boardEval((r-2*i,c)) #if board[(r-2*i,c)] != symbols[board[opponentKing]] else 0
-            ooffensive+=boardEval((r-i,c-i)) #if board[(r-i,c-i)] != symbols[board[opponentKing]] else 0
-            ooffensive+=boardEval((r-i,c+i)) #if board[(r-i,c+i)] != symbols[board[opponentKing]] else 0
+            offensive+=eval((r-2*i,c)) #if board[(r-2*i,c)] != symbols[board[opponentKing]] else 0
+            offensive+=eval((r-i,c-i)) #if board[(r-i,c-i)] != symbols[board[opponentKing]] else 0
+            offensive+=eval((r-i,c+i)) #if board[(r-i,c+i)] != symbols[board[opponentKing]] else 0
         else:
-            ooffensive+=boardEval((r+2*i,c)) #if board[(r+2*i,c)] != symbols[board[opponentKing]] else 0
-            ooffensive+=boardEval((r+i,c-i)) #if board[(r+i,c-i)] != symbols[board[opponentKing]] else 0
-            ooffensive+=boardEval((r+i,c+i)) #if board[(r+i,c+i)] != symbols[board[opponentKing]] else 0
-        ooffensive+=boardEval((r,c-2*i)) #if board[(r,c-2*i)] != symbols[board[opponentKing]] else 0
-        ooffensive+=boardEval((r,c+2*i)) #if board[(r,c+2*i)] != symbols[board[opponentKing]] else 0
+            offensive+=eval((r+2*i,c)) #if board[(r+2*i,c)] != symbols[board[opponentKing]] else 0
+            offensive+=eval((r+i,c-i)) #if board[(r+i,c-i)] != symbols[board[opponentKing]] else 0
+            offensive+=eval((r+i,c+i)) #if board[(r+i,c+i)] != symbols[board[opponentKing]] else 0
+        offensive+=eval((r,c-2*i)) #if board[(r,c-2*i)] != symbols[board[opponentKing]] else 0
+        offensive+=eval((r,c+2*i)) #if board[(r,c+2*i)] != symbols[board[opponentKing]] else 0
 
     w1=50
+    # eval(opponentKing)
     w2=75
+    # eval(myKing)
     w3=45
+    # defensive
     w4=35
+    # offensive
     w5=80
-    res=f(w1*offensive+w2*defensive+w5*boarddensity+w3*ddefensive+w4*ooffensive)
-    return res
+    # globalDensity
+    w6=100
+    # compareDistance()
+
+    f = lambda x : x/10000
+
+    return f(w1*eval(opponentKing)+w2*eval(myKing)+w3*defensive+w4*offensive+w5*globalDensity+w6*compareDistance())
 
 def possiblesquares(x):
     return [(x[0]-1,x[1]-1),(x[0]-1,x[1]+1),(x[0]-2,x[1]),(x[0]+2,x[1]),(x[0]+1,x[1]+1),(x[0]+1,x[1]-1),(x[0],x[1]-2),(x[0],x[1]+2)]
-
-def distance(x,y):
-    return euclideanDistance(x,y)
 
 def manhattanDistance(x, y):
     return abs(x[0]-y[0]) + abs(x[1]-y[1])
@@ -154,6 +187,7 @@ def manhattanDistance(x, y):
 def euclideanDistance(x, y):
     return math.sqrt((x[0]-y[0])**2 + (x[1]-y[1])**2)
 
-def f(x):
-    return x/10000
+
+
+
 

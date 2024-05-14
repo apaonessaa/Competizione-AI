@@ -56,13 +56,21 @@ def h(board, player):
         density = 0
         zeros=0
         for square in squares:
-            zeros+=1 if symbols[board[square]]==0 else 0
+            #zeros+=1 if symbols[board[square]]==0 else 0
 
             if board[square] == board.empty:
+                zeros+=1
                 if x==opponentKing:
                     density+=symbols[board[opponentKing]] if possibleMove(opponentKing,square)>0 else symbols[board[myKing]]
                 elif x==myKing:
                     density+=symbols[board[square]] if possibleMove(myKing,square)>0 else symbols[board[myKing]]
+            elif board[square] == board.off:
+                zeros+=1
+                # se e' in avanti all'opponentKing allora e' un vantaggio per myPlayer perche' il Re avversario ha meno celle 
+                # per scappare e myPlayer ha meno celle da controllare per attaccare il Re
+                # altrimenti se e' dietro e' un vantaggio per opponentKing perche' ha le "spalle" coperte
+                if x==opponentKing:
+                    density+=symbols[board[myKing]] if possibleMove(opponentKing,square)>0 else symbols[board[opponentKing]]
             else:
                 if x==myKing or x==opponentKing:
                     if symbols[board[x]] == symbols[board[square]]:

@@ -13,3 +13,5 @@ Avvio del gioco:
 ```
 python3 game.py
 ```
+
+![Figure_1](https://github.com/user-attachments/assets/02d593b2-143d-4ed0-8e12-cf9566518710)
